@@ -10,7 +10,7 @@ oh-my-gogo-protoc is a wrapper around the protobuf compiler (`protoc`) that auto
 - Automatically runs `go install github.com/gogo/protobuf/protoc-gen-gofast`.
 - Then it runs `protoc --proto_path=...github.com/gogo/protobuf/protobuf@1... my.proto` i.e. with the correct include paths\*\* and the `google/protobuf/*.proto=github.com/gogo/protobuf/types` mappings.
 
-Replace `gofast_out` with `gogoslick_out` or any other generator you prefer. It will figure it out and install set up the appropriate binary.
+Replace `gofast_out` with `gogoslick_out` or any other generator you prefer. It will figure it out and install and set up the appropriate binary.
 
 ## Why should I use it?
 
@@ -21,6 +21,8 @@ It makes working with Go modules and gogo/protobuf easy and pain-free.\*\*
 - In your module dir, run `go get oya.to/oh-my-gogo-protoc`.
 - In your source file add or edit your [go generate](https://golang.org/cmd/go/#hdr-Generate_Go_files_by_processing_source) directive `//go:generate go run oya.to/oh-my-gogo-protoc --gofast_out=. my.proto`. That's it.
 - _Don't forget to install the gogo/proto deps you need e.g. `go get github.com/gogo/protobuf/protoc-gen-gofast`_
+
+*If you `import "github.com/gogo/protobuf/gogoproto/gogo.proto";`, for now you'll need to replace it with `import "gogoproto/gogo.proto";`*
 
 ## Can I use it with [Twirp](https://github.com/twitchtv/twirp) RPC?
 
