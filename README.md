@@ -16,6 +16,8 @@ Replace `gofast_out` with `gogoslick_out` or any other generator you prefer. It 
 
 It makes working with Go modules and gogo/protobuf easy and pain-free.\*\*
 
+Typically, to use gogo/protobuf you run protoc with a bunch of params like `-I$GOPATH/src/...`. This doesn't work for Go modules because the directory is at `$GOPATH/pkg/mod/github.com/gogo/protobuf@version/...` so you need a work-around involving `go list -f {{.Dir}}...` which may or may not work. It also doesn't work if `$GOPATH` is a list of directories.
+
 ## How do I install and use it?
 
 - In your module dir, run `go get oya.to/oh-my-gogo-protoc`.
