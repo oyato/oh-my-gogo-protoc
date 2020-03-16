@@ -14,7 +14,7 @@ Replace `gofast_out` with `gogoslick_out` or any other generator you prefer. It 
 
 ## Why should I use it?
 
-It makes working with Go modules and gogo/protobuf easy and pain-free.\*\*
+It makes working with Go modules and gogo/protobuf easy and pain-free.
 
 Typically, to use gogo/protobuf you run protoc with a bunch of params like `-I$GOPATH/src/...`. This doesn't work for Go modules because the directory is at `$GOPATH/pkg/mod/github.com/gogo/protobuf@version/...` so you need a work-around involving `go list -f {{.Dir}}...` which may or may not work. It also doesn't work if `$GOPATH` is a list of directories.
 
@@ -23,8 +23,6 @@ Typically, to use gogo/protobuf you run protoc with a bunch of params like `-I$G
 - In your module dir, run `go get oya.to/oh-my-gogo-protoc`.
 - In your source file add or edit your [go generate](https://golang.org/cmd/go/#hdr-Generate_Go_files_by_processing_source) directive `//go:generate go run oya.to/oh-my-gogo-protoc --gofast_out=. my.proto`. That's it.
 - _Don't forget to install the gogo/proto deps you need e.g. `go get github.com/gogo/protobuf/protoc-gen-gofast`_
-
-*If you `import "github.com/gogo/protobuf/gogoproto/gogo.proto";`, for now you'll need to replace it with `import "gogoproto/gogo.proto";`*
 
 ## Can I use it with [Twirp](https://github.com/twitchtv/twirp) RPC?
 

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -24,8 +25,39 @@ var (
 )
 
 func main() {
-	seenInc := map[string]bool{}
-	protocArgs := []string{"--proto_path=."}
+	if err := Main(); err != nil {
+		stderr.Fatalln(err)
+	}
+}
+
+func Main() error {
+	gg := struct{ Root string }{}
+	err := goListPkg("github.com/gogo/protobuf/gogoproto", &gg)
+	if err != nil {
+		return err
+	}
+	if !filepath.IsAbs(gg.Root) {
+		return fmt.Errorf("Cannot find github.com/gogo/protobuf module root")
+	}
+
+	tempDir, err := ioutil.TempDir("", "omg-protoc-")
+	if err != nil {
+		return fmt.Errorf("Cannot temp dir: %s", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	protoDstDir := filepath.Join(tempDir, "github.com", "gogo", "protobuf", "gogoproto")
+	protoSrcDir := filepath.Join(gg.Root, "gogoproto")
+	if err := copyProtoFiles(protoDstDir, protoSrcDir); err != nil {
+		return fmt.Errorf("Cannot copy gogoproto/*.proto files: %s", err)
+	}
+
+	protocArgs := []string{
+		"--proto_path=.",
+		"--proto_path=" + tempDir,
+		"--proto_path=" + filepath.Join(gg.Root, "protobuf"),
+	}
+
 	inputArgs := append([]string{}, os.Args[1:]...)
 	for argPos, arg := range inputArgs {
 		argL := strings.SplitN(arg, "=", 2)
@@ -45,14 +77,11 @@ func main() {
 
 		name := "protoc-gen-" + argNm[2:len(argNm)-4]
 		importPath := "github.com/gogo/protobuf/" + name
-		pkg := struct {
-			Target string
-			Root   string
-		}{}
+		pkg := struct{ Target string }{}
 		if err := goListPkg(importPath, &pkg); err != nil {
 			continue
 		}
-		if pkg.Root == "" || !filepath.IsAbs(pkg.Target) {
+		if !filepath.IsAbs(pkg.Target) {
 			continue
 		}
 		if err := goInstall(importPath); err != nil {
@@ -62,25 +91,46 @@ func main() {
 		if argVal != "" {
 			inputArgs[argPos] = argNm + "=" + insertGogoTypes(argVal)
 		}
-		if !seenInc[pkg.Root] {
-			seenInc[pkg.Root] = true
-			protocArgs = append(protocArgs, "--proto_path="+filepath.Join(pkg.Root, "protobuf"))
-			protocArgs = append(protocArgs, "--proto_path="+pkg.Root)
-		}
 		protocArgs = append(protocArgs, "--plugin="+name+"="+pkg.Target)
 	}
 	protocArgs = append(protocArgs, inputArgs...)
 
 	protocExe, err := exec.LookPath("protoc")
 	if err != nil {
-		stderr.Fatalln("Cannot find the `protoc` command.\nPlease install it or see: https://github.com/protocolbuffers/protobuf#protocol-compiler-installation")
+		return fmt.Errorf("Cannot find the `protoc` command: %s.\nPlease install it or see: https://github.com/protocolbuffers/protobuf#protocol-compiler-installation", err)
 	}
 
 	cmd := exec.Command(protocExe, protocArgs...)
 	cmd.Stdout = os.Stdout
 	if err := runCmd(cmd); err != nil {
-		stderr.Fatalln(err)
+		return err
 	}
+	return nil
+}
+
+func copyProtoFiles(dstDir string, srcDir string) error {
+	os.MkdirAll(dstDir, 0755)
+
+	srcFiles, err := filepath.Glob(filepath.Join(srcDir, "*.proto"))
+	if err != nil {
+		return fmt.Errorf("Cannot glob .proto files in %s: %s", srcDir, err)
+	}
+	if len(srcFiles) == 0 {
+		return fmt.Errorf("Cannot find any .proto files in %s", srcDir)
+	}
+
+	for _, srcFn := range srcFiles {
+		src, err := ioutil.ReadFile(srcFn)
+		if err != nil {
+			return fmt.Errorf("Cannot read %s: %s", srcFn, err)
+		}
+		dstFn := filepath.Join(dstDir, filepath.Base(srcFn))
+		err = ioutil.WriteFile(dstFn, src, 0644)
+		if err != nil {
+			return fmt.Errorf("Cannot write to %s: %s", dstFn, err)
+		}
+	}
+	return nil
 }
 
 func insertGogoTypes(argVal string) string {
